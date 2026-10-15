@@ -1,0 +1,7 @@
+# Godot 4 (официальный шаблон: каталог .godot генерируется редактором)
+.godot/
+export.cfg
+export_credentials.cfg
+build/
+# Остальное
+tools/__pycache__/
