@@ -231,18 +231,19 @@ func reset_game() -> void:
 	for i in range(ENEMY_SPAWNS.size()):
 		var spawn: Dictionary = ENEMY_SPAWNS[i]
 		var t: Dictionary = ENEMY_TYPES[spawn["type"]]
-		var enemy := EnemyScene.instantiate()
+		var enemy: MilaEnemy = EnemyScene.instantiate() as MilaEnemy
 		enemy.process_mode = Node.PROCESS_MODE_PAUSABLE
 		add_child(enemy)
 		enemy.died.connect(_on_enemy_died)
 		enemy.touched_player.connect(_on_enemy_touched)
 		enemy.got_hit.connect(_on_enemy_got_hit)
+		var tex: Texture2D = _enemy_textures[spawn["type"]]
 		enemy.setup({
 			"type": spawn["type"], "hp": t["hp"], "speed": t["speed"], "h": t["h"],
 			"fly": t["fly"], "min_x": spawn["min"], "max_x": spawn["max"],
 			"platform_y": float(PLATFORMS[int(spawn["plat"])][1]),
 			"dir": -1 if i % 2 == 1 else 1,
-		}, _enemy_textures[spawn["type"]])
+		}, tex)
 		enemies.append(enemy)
 
 	items = _make_items()
@@ -302,7 +303,7 @@ func _stats_text() -> String:
 
 
 func _on_player_shot(from_pos: Vector2, dir: int) -> void:
-	var bullet := BulletScene.instantiate()
+	var bullet: MilaBullet = BulletScene.instantiate() as MilaBullet
 	bullet.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(bullet)
 	bullet.setup(from_pos, dir)

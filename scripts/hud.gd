@@ -253,8 +253,9 @@ func _build_touch() -> void:
 	]
 	for d in defs:
 		var b := Button.new()
-		b.text = d[1]
-		b.position = d[2]
+		b.text = str(d[1])
+		var btn_pos: Vector2 = d[2]
+		b.position = btn_pos
 		b.size = Vector2(64, 64)
 		b.add_theme_font_size_override("font_size", 24)
 		var key: String = d[0]

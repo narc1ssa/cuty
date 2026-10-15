@@ -1,3 +1,4 @@
+class_name MilaBullet
 extends Area2D
 ## Розовая звёздочка-снаряд из бластера Милы.
 

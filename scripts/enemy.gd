@@ -1,3 +1,4 @@
+class_name MilaEnemy
 extends Area2D
 ## Враг: патрулирует строго свою платформу между min_x и max_x.
 ## Летучие мыши (fly) парят над платформой по синусоиде.
@@ -26,7 +27,7 @@ var _flash := 0.0
 
 
 func setup(cfg: Dictionary, sprite_texture: Texture2D) -> void:
-	enemy_type = cfg["type"]
+	enemy_type = str(cfg["type"])
 	max_hp = int(cfg["hp"])
 	hp = max_hp
 	speed = float(cfg["speed"])
@@ -36,6 +37,7 @@ func setup(cfg: Dictionary, sprite_texture: Texture2D) -> void:
 	max_x = float(cfg["max_x"])
 	platform_y = float(cfg["platform_y"])
 	dir = int(cfg.get("dir", 1))
+	# (преобразования явные: Godot 4.7 считает вывод типа из Variant ошибкой)
 	global_position.x = (min_x + max_x) / 2.0
 	_update_y(0.0)
 	if is_node_ready():

@@ -73,11 +73,12 @@ func _draw() -> void:
 	draw_rect(Rect2(-6, -8, 13, 105), brown)
 	for centre in [Vector2(24 + sway, 16), Vector2(66 + sway, 10), Vector2(112 + sway, 20),
 			Vector2(size.x - 34 + sway, 14), Vector2(size.x - 82 + sway, 10), Vector2(size.x - 124 + sway, 22)]:
+		var c: Vector2 = centre
 		for i in range(6):
-			var a := float(i) * 1.05 + centre.x
+			var a := float(i) * 1.05 + c.x
 			var pts := PackedVector2Array()
 			for k in range(14):
 				var aa := float(k) / 14.0 * TAU
-				pts.append(centre + Vector2(cos(a) * 11.0, sin(a) * 8.0) + Vector2(cos(aa) * 10.0, sin(aa) * 7.0))
+				pts.append(c + Vector2(cos(a) * 11.0, sin(a) * 8.0) + Vector2(cos(aa) * 10.0, sin(aa) * 7.0))
 			draw_colored_polygon(pts, Color(1, 0.62, 0.78, 0.9))
-		draw_circle(centre, 5.5, Color(1, 0.78, 0.87, 0.95))
+		draw_circle(c, 5.5, Color(1, 0.78, 0.87, 0.95))

@@ -43,7 +43,11 @@ func _sweep(f0: float, f1: float, dur: float, square: bool) -> AudioStreamWAV:
 		var k := float(i) / float(maxi(1, n))
 		var freq := lerpf(f0, f1, k)
 		phase += freq / MIX_RATE
-		var v := sign(sin(phase * TAU)) if square else sin(phase * TAU)
+		var v: float
+		if square:
+			v = 1.0 if sin(phase * TAU) >= 0.0 else -1.0
+		else:
+			v = sin(phase * TAU)
 		var env := 1.0 - k
 		data[i] = int(clampf(128.0 + v * env * 52.0, 0.0, 255.0))
 	return _make_wav(data)
