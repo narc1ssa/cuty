@@ -61,6 +61,7 @@ var state := "menu"  # menu | playing | paused | win-anim | win | over
 var player
 var hud
 var sfx
+var music
 var clouds
 var petals
 var portal
@@ -104,6 +105,9 @@ func _ready() -> void:
 
 	sfx = preload("res://scripts/sfx.gd").new()
 	add_child(sfx)
+
+	music = preload("res://scripts/music.gd").new()
+	add_child(music)
 
 	# Небо за картой.
 	var sky_layer := CanvasLayer.new()
@@ -286,6 +290,7 @@ func resume_game() -> void:
 
 func _toggle_sound() -> void:
 	sfx.muted = not sfx.muted
+	music.set_muted(sfx.muted)
 	hud.set_sound_text(not sfx.muted)
 
 
