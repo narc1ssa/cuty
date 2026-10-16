@@ -185,7 +185,7 @@ func _build_hud() -> void:
 	_timer = _label("00:00", 16)
 	timer_panel.add_child(_timer)
 	_sound_btn = Button.new()
-	_sound_btn.text = "Звук: вкл"
+	_sound_btn.text = "Звук и музыка: вкл"
 	_sound_btn.pressed.connect(func() -> void: sound_requested.emit())
 	right.add_child(_sound_btn)
 	var pause_btn := Button.new()
@@ -325,7 +325,7 @@ func show_toast() -> void:
 
 
 func set_sound_text(on: bool) -> void:
-	_sound_btn.text = "Звук: вкл" if on else "Звук: выкл"
+	_sound_btn.text = "Звук и музыка: вкл" if on else "Звук и музыка: выкл"
 
 
 func set_stats(hp: int, coins: int, gems: int, combo: int, foes: int, energy: float, time_sec: float, progress: float) -> void:
