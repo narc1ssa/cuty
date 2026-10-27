@@ -13,7 +13,7 @@ signal sound_requested
 const PINK := Color(1, 0.56, 0.77)
 const DARK := Color(0.17, 0.09, 0.19, 0.88)
 
-var touch_keys := {"left": false, "right": false, "jump": false, "shoot": false}
+var touch_keys := {"left": false, "right": false, "jump": false, "shoot": false, "heart": false, "bunny": false}
 
 var _hud_root: Control
 var _hearts: Label
@@ -30,6 +30,8 @@ var _progress_frac := 0.0
 var _toast: PanelContainer
 var _toast_left := 0.0
 var _sound_btn: Button
+var _heart_slot := {}
+var _bunny_slot := {}
 
 var _menu: Control
 var _pause: Control
@@ -84,13 +86,42 @@ func _full_rect(c: Control) -> Control:
 	return c
 
 
+func _build_ability_slot(parent: Control, kind: String, key: String, start_text: String) -> Dictionary:
+	## Один слот панели способностей: иконка + клавиша + счётчик зарядов
+	## (как на макете HUD.png — звёздочка/сердце/зайчик с Z/X/C).
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 2)
+	parent.add_child(box)
+	var icon_panel := _panel(Color(0.10, 0.05, 0.12, 0.85))
+	icon_panel.custom_minimum_size = Vector2(46, 46)
+	box.add_child(icon_panel)
+	var icon := preload("res://scripts/weapon_icon.gd").new()
+	icon.kind = kind
+	icon.custom_minimum_size = Vector2(26, 26)
+	icon.set_anchors_preset(Control.PRESET_CENTER)
+	icon_panel.add_child(icon)
+	var key_row := HBoxContainer.new()
+	key_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_child(key_row)
+	var key_label := _label(key, 12, Color(0.12, 0.06, 0.12))
+	key_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0))
+	var key_bg := _panel(Color(1, 0.72, 0.85, 0.95))
+	key_bg.add_child(key_label)
+	key_row.add_child(key_bg)
+	var count_label := _label(start_text, 13, Color(1, 0.85, 0.30))
+	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(count_label)
+	return {"icon": icon, "count": count_label}
+
+
 func _ready() -> void:
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_hud()
 	_build_touch()
 	_menu = _build_overlay("МИЛА", "1-4  •  САКУРОВЫЙ ЛЕС",
-		"Добеги от розового флажка на левом краю леса до крайнего правого храма с крутящейся розовой воронкой. Прыгай по платформам, стреляй звёздочками по врагам — каждый патрулирует свою платформу, — собирай монеты и кристаллы!\n\nУправление:  стрелки / A D — движение,  стрелка вверх / W / Пробел — прыжок (в воздухе ещё раз),  Z / X / J или мышь — стрельба,  P / Esc — пауза,  M — звук,  R — заново.",
+		"Добеги от розового флажка на левом краю леса до крайнего правого храма с крутящейся розовой воронкой. Прыгай по платформам, стреляй по врагам — каждый патрулирует свою платформу, — собирай монеты и кристаллы!\n\nУправление:  стрелки / A D — движение,  стрелка вверх / W / Пробел — прыжок (в воздухе ещё раз),  Z / J или мышь — звёздный бластер (∞),  X — сердечный выстрел (двойной урон, 3 заряда),  C — выстрел-зайчик (пробивает насквозь, 6 зарядов),  P / Esc — пауза,  M — звук,  R — заново.",
 		"Играть", true)
 	_pause = _build_overlay("Пауза", "", "Лепестки сакуры подождут.", "Продолжить", false)
 	_win = _build_overlay("Уровень пройден!", "", "Мила добралась до храма и шагнула в крутящуюся розовую воронку!", "Играть ещё раз", false)
@@ -197,21 +228,31 @@ func _build_hud() -> void:
 	var hints := _panel()
 	hints.position = Vector2(12, 720 - 58)
 	_hud_root.add_child(hints)
-	hints.add_child(_label("Стрелки — движение   •   Вверх/Пробел — прыжок x2   •   Z — атака", 13, Color(1, 0.89, 0.95)))
+	hints.add_child(_label("Стрелки — движение   •   Вверх/Пробел — прыжок x2   •   Z/X/C — оружие", 13, Color(1, 0.89, 0.95)))
 
-	# Оружие и энергия справа внизу.
+	# Панель способностей (Z/X/C) и энергия справа внизу — по макету HUD.png.
 	var weapon := _panel()
 	weapon.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	weapon.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	weapon.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	weapon.offset_left = -292
+	weapon.offset_left = -300
 	weapon.offset_right = -12
-	weapon.offset_top = -78
+	weapon.offset_top = -148
 	weapon.offset_bottom = -12
 	_hud_root.add_child(weapon)
 	var wvbox := VBoxContainer.new()
+	wvbox.add_theme_constant_override("separation", 6)
 	weapon.add_child(wvbox)
-	wvbox.add_child(_label("ЗВЁЗДНЫЙ БЛАСТЕР  •  ЭНЕРГИЯ", 12, Color(1, 0.84, 0.93)))
+
+	var slots := HBoxContainer.new()
+	slots.add_theme_constant_override("separation", 10)
+	slots.alignment = BoxContainer.ALIGNMENT_CENTER
+	wvbox.add_child(slots)
+	_build_ability_slot(slots, "star", "Z", "∞")
+	_heart_slot = _build_ability_slot(slots, "heart", "X", "3")
+	_bunny_slot = _build_ability_slot(slots, "bunny", "C", "6")
+
+	wvbox.add_child(_label("ПАТРОНЫ  •  ЭНЕРГИЯ", 12, Color(1, 0.84, 0.93)))
 	_energy = ProgressBar.new()
 	_energy.min_value = 0
 	_energy.max_value = 100
@@ -249,6 +290,7 @@ func _build_touch() -> void:
 	add_child(_touch_root)
 	var defs := [
 		["left", "<", Vector2(18, 720 - 150)], ["right", ">", Vector2(96, 720 - 150)],
+		["bunny", "C", Vector2(1280 - 330, 720 - 150)], ["heart", "X", Vector2(1280 - 254, 720 - 150)],
 		["shoot", "S", Vector2(1280 - 176, 720 - 150)], ["jump", "^", Vector2(1280 - 88, 720 - 150)],
 	]
 	for d in defs:
@@ -328,7 +370,8 @@ func set_sound_text(on: bool) -> void:
 	_sound_btn.text = "Звук и музыка: вкл" if on else "Звук и музыка: выкл"
 
 
-func set_stats(hp: int, coins: int, gems: int, combo: int, foes: int, energy: float, time_sec: float, progress: float) -> void:
+func set_stats(hp: int, coins: int, gems: int, combo: int, foes: int, energy: float, time_sec: float,
+		progress: float, heart_charges: int = 0, heart_max: int = 3, bunny_charges: int = 0, bunny_max: int = 6) -> void:
 	_hearts.text = "♥".repeat(maxi(0, hp)) + "♡".repeat(maxi(0, 5 - hp))
 	_coins.text = "Монеты: %d" % coins
 	_gems.text = "Кристаллы: %d" % gems
@@ -337,6 +380,12 @@ func set_stats(hp: int, coins: int, gems: int, combo: int, foes: int, energy: fl
 	_foes.text = "Врагов осталось: %d" % foes
 	_energy.value = energy
 	_progress_frac = clampf(progress, 0.0, 1.0)
+	if _heart_slot.has("count"):
+		_heart_slot["count"].text = "%d/%d" % [heart_charges, heart_max]
+		_heart_slot["icon"].set_dim(heart_charges <= 0)
+	if _bunny_slot.has("count"):
+		_bunny_slot["count"].text = "%d/%d" % [bunny_charges, bunny_max]
+		_bunny_slot["icon"].set_dim(bunny_charges <= 0)
 
 
 func _show_only(which: Control) -> void:
