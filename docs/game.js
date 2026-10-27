@@ -78,50 +78,28 @@ const sfx = {
   win: () => [523, 659, 784, 1047, 1319].forEach((f, i) => beep(f, f, 0.22, 'triangle', 0.06, i * 0.11)),
 };
 
-/* ---------------- фоновая музыка (зацикленная пентатоника, синтез) ---------------- */
-const MUSIC_NOTES = [
-  [523.25, 0.4], [659.25, 0.4], [783.99, 0.4], [659.25, 0.4],
-  [523.25, 0.4], [392.00, 0.4], [440.00, 0.4], [523.25, 0.8],
-  [587.33, 0.4], [659.25, 0.4], [783.99, 0.4], [880.00, 0.4],
-  [783.99, 0.4], [659.25, 0.4], [523.25, 0.4], [392.00, 0.8],
-];
-const MUSIC_VOLUME = 0.05;
-let musicGainNode = null, musicStarted = false, musicTimer = null;
-function playMusicNote(freq, dur, t) {
-  if (!audioCtx || !musicGainNode) return;
-  const o1 = audioCtx.createOscillator(), o2 = audioCtx.createOscillator();
-  const g = audioCtx.createGain(), g2 = audioCtx.createGain();
-  o1.type = 'sine'; o2.type = 'sine';
-  o1.frequency.value = freq; o2.frequency.value = freq * 2;
-  g2.gain.value = 0.25;
-  o2.connect(g2).connect(g); o1.connect(g); g.connect(musicGainNode);
-  const attack = Math.min(0.08, dur * 0.2);
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(0.9, t + attack);
-  g.gain.linearRampToValueAtTime(0.9 * 0.65, t + dur);
-  o1.start(t); o2.start(t);
-  o1.stop(t + dur + 0.02); o2.stop(t + dur + 0.02);
-}
-function scheduleMusicLoop(startTime) {
-  let t = startTime;
-  for (const [freq, dur] of MUSIC_NOTES) { playMusicNote(freq, dur, t); t += dur; }
-  const total = t - startTime;
-  clearTimeout(musicTimer);
-  musicTimer = setTimeout(() => scheduleMusicLoop(t), Math.max(50, (total - 0.15) * 1000));
+/* ---------------- фоновая музыка (реальные треки, бесконечное чередование) ----------------
+   Как только одна дорожка заканчивается, тут же начинает играть следующая,
+   по кругу: music.mp3 -> music_soft.mp3 -> music.mp3 -> ... без остановки. */
+const MUSIC_TRACKS = ['music.mp3', 'music_soft.mp3'];
+const MUSIC_VOLUME = 0.45;
+let musicEl = null, musicStarted = false, musicTrackIndex = 0;
+function playMusicTrack(i) {
+  if (!musicEl) return;
+  musicTrackIndex = i % MUSIC_TRACKS.length;
+  musicEl.src = MUSIC_TRACKS[musicTrackIndex];
+  musicEl.play().catch(() => {});
 }
 function startMusic() {
-  try {
-    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    if (musicStarted) return;
-    musicStarted = true;
-    musicGainNode = audioCtx.createGain();
-    musicGainNode.gain.value = muted ? 0 : MUSIC_VOLUME;
-    musicGainNode.connect(audioCtx.destination);
-    scheduleMusicLoop(audioCtx.currentTime + 0.08);
-  } catch (e) { /* без музыки */ }
+  if (musicStarted) return;
+  musicStarted = true;
+  musicEl = new Audio();
+  musicEl.volume = muted ? 0 : MUSIC_VOLUME;
+  musicEl.addEventListener('ended', () => playMusicTrack(musicTrackIndex + 1));
+  playMusicTrack(0);
 }
 function setMusicVolume() {
-  if (musicGainNode) musicGainNode.gain.setTargetAtTime(muted ? 0 : MUSIC_VOLUME, audioCtx.currentTime, 0.05);
+  if (musicEl) musicEl.volume = muted ? 0 : MUSIC_VOLUME;
 }
 
 /* ---------------- уровень ----------------
