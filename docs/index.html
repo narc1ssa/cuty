@@ -50,14 +50,18 @@
       <div class="hud-controls panel">
         <span><kbd>←</kbd><kbd>→</kbd> движение</span>
         <span><kbd>↑</kbd>/<kbd>Space</kbd> прыжок ×2</span>
-        <span><kbd>Z</kbd> атака</span>
+        <span><kbd>Z</kbd>/<kbd>X</kbd>/<kbd>C</kbd> оружие</span>
       </div>
 
-      <!-- справа внизу: оружие и энергия -->
+      <!-- справа внизу: панель способностей (Z/X/C) и энергия -->
       <div class="hud-weapon panel">
-        <div class="weapon-card active">⭐<small>Z • ∞</small></div>
+        <div class="weapon-cards">
+          <div class="weapon-card active" title="Звёздный бластер — бесконечно">⭐<small>Z • ∞</small></div>
+          <div class="weapon-card" id="heartCard" title="Сердечный выстрел — двойной урон">💗<small>X • <span id="heartCharges">3</span>/3</small></div>
+          <div class="weapon-card" id="bunnyCard" title="Выстрел-зайчик — пробивает насквозь">🐇<small>C • <span id="bunnyCharges">6</span>/6</small></div>
+        </div>
         <div class="weapon-info">
-          <div class="weapon-label">ЗВЁЗДНЫЙ БЛАСТЕР • ЭНЕРГИЯ</div>
+          <div class="weapon-label">ПАТРОНЫ • ЭНЕРГИЯ</div>
           <div class="energy-track"><div class="energy-fill" id="energyFill"></div></div>
           <div class="foes-left">Врагов осталось: <b id="foesLeft">0</b></div>
         </div>
@@ -73,6 +77,8 @@
         <button class="touch-btn" data-k="right">▶</button>
       </div>
       <div class="touch-group">
+        <button class="touch-btn touch-bunny" data-k="bunny">🐇</button>
+        <button class="touch-btn touch-heart" data-k="heart">💗</button>
         <button class="touch-btn touch-shoot" data-k="shoot">⭐</button>
         <button class="touch-btn touch-jump" data-k="jump">▲</button>
       </div>
@@ -86,12 +92,14 @@
         <p class="subtitle">1-4 • Сакуровый лес ✿</p>
         <p class="story">Добеги от розового флажка ⚑ на левом краю леса до крайнего
           правого храма с крутящейся розовой воронкой 🌀. Прыгай по платформам,
-          стреляй звёздочками по врагам — каждый патрулирует свою платформу, —
+          стреляй по врагам — каждый патрулирует свою платформу, —
           собирай монеты и кристаллы и не падай в пропасти с шипами!</p>
         <div class="controls-grid">
           <div><kbd>←</kbd><kbd>→</kbd> или <kbd>A</kbd><kbd>D</kbd><span>движение</span></div>
           <div><kbd>↑</kbd> <kbd>W</kbd> <kbd>Space</kbd><span>прыжок (в воздухе — ещё раз!)</span></div>
-          <div><kbd>Z</kbd> <kbd>X</kbd> <kbd>J</kbd> или мышь<span>стрельба из бластера</span></div>
+          <div><kbd>Z</kbd> <kbd>J</kbd> или мышь<span>⭐ звёздный бластер — бесконечно</span></div>
+          <div><kbd>X</kbd><span>💗 сердечный выстрел — двойной урон, 3 заряда</span></div>
+          <div><kbd>C</kbd><span>🐇 выстрел-зайчик — пробивает насквозь, 6 зарядов</span></div>
           <div><kbd>P</kbd>/<kbd>Esc</kbd> пауза &nbsp;•&nbsp; <kbd>M</kbd> звук &nbsp;•&nbsp; <kbd>R</kbd> заново</div>
         </div>
         <button class="big-btn" id="startBtn" disabled>Загрузка…</button>

@@ -21,6 +21,8 @@ const ui = {
   toast: $('toast'), menu: $('menu'), pause: $('pauseMenu'), win: $('winMenu'),
   over: $('overMenu'), startBtn: $('startBtn'), loadHint: $('loadHint'),
   winStats: $('winStats'), overStats: $('overStats'), touch: $('touch'),
+  heartCard: $('heartCard'), heartCharges: $('heartCharges'),
+  bunnyCard: $('bunnyCard'), bunnyCharges: $('bunnyCharges'),
 };
 
 /* ---------------- загрузка картинок ---------------- */
@@ -191,12 +193,27 @@ let timeSec = 0, combo = 0, comboTimer = 0, maxCombo = 0;
 let coinsGot = 0, gemsGot = 0, kills = 0, shootCd = 0, energy = 100;
 let warned = false, toastTimer = 0, winTimer = 0, totalCoins = 0, totalGems = 0;
 
+/* Панель способностей (как на макете HUD.png): Z — звёздный бластер
+   (бесконечно, тратит энергию), X — сердечный выстрел (двойной урон,
+   ограниченные заряды), C — выстрел-зайчик (пробивает насквозь несколько
+   врагов, ограниченные заряды). Заряды X/C восстанавливаются сами со
+   временем, как энергия бластера. */
+const WEAPONS = {
+  star:  { speed: 660, life: 1.1, dmg: 1, pierce: false },
+  heart: { speed: 520, life: 1.2, dmg: 2, pierce: false },
+  bunny: { speed: 760, life: 1.3, dmg: 1, pierce: true },
+};
+const HEART_MAX = 3, HEART_REGEN = 9, HEART_CD = 0.35;
+const BUNNY_MAX = 6, BUNNY_REGEN = 6, BUNNY_CD = 0.26;
+
 function resetGame() {
   player = {
     x: 62, y: PLATFORMS[0].y - 78, w: 42, h: 78, vx: 0, vy: 0,
     face: 1, hp: 5, grounded: false, jumps: 0, coyote: 0, jbuffer: 0,
     invuln: 0, shootAnim: 0, hurtAnim: 0, runTime: 0, dead: false,
     respawn: { x: 62, y: PLATFORMS[0].y - 78 }, lastSafe: null, safeTimer: 0,
+    heartCharges: HEART_MAX, bunnyCharges: BUNNY_MAX,
+    heartCd: 0, bunnyCd: 0, heartRegen: 0, bunnyRegen: 0,
   };
   enemies = ENEMY_SPAWNS.map((s, i) => {
     const t = ENEMY_TYPES[s.type], p = PLATFORMS[s.plat];
@@ -218,12 +235,13 @@ function resetGame() {
 }
 
 /* ---------------- ввод ---------------- */
-const keys = { left: false, right: false, jump: false, shoot: false };
+const keys = { left: false, right: false, jump: false, shoot: false, heart: false, bunny: false };
 let jumpPressed = false;
 const KEYMAP = {
   ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
   ArrowUp: 'jump', KeyW: 'jump', Space: 'jump',
-  KeyZ: 'shoot', KeyX: 'shoot', KeyJ: 'shoot',
+  KeyZ: 'shoot', KeyJ: 'shoot',
+  KeyX: 'heart', KeyC: 'bunny',
 };
 addEventListener('keydown', e => {
   if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'Space'].includes(e.code)) e.preventDefault();
@@ -334,6 +352,16 @@ function update(dt) {
   if (player.hurtAnim > 0) player.hurtAnim -= dt;
   if (player.shootAnim > 0) player.shootAnim -= dt;
   energy = Math.min(100, energy + 26 * dt);
+  if (player.heartCd > 0) player.heartCd -= dt;
+  if (player.bunnyCd > 0) player.bunnyCd -= dt;
+  if (player.heartCharges < HEART_MAX) {
+    player.heartRegen += dt;
+    if (player.heartRegen >= HEART_REGEN) { player.heartRegen -= HEART_REGEN; player.heartCharges++; }
+  } else player.heartRegen = 0;
+  if (player.bunnyCharges < BUNNY_MAX) {
+    player.bunnyRegen += dt;
+    if (player.bunnyRegen >= BUNNY_REGEN) { player.bunnyRegen -= BUNNY_REGEN; player.bunnyCharges++; }
+  } else player.bunnyRegen = 0;
 
   /* --- движение героини --- */
   const p = player;
@@ -388,13 +416,24 @@ function update(dt) {
     }
   }
 
-  /* --- стрельба: звёздочки из бластера --- */
+  /* --- стрельба: панель способностей Z (звёздочка) / X (сердце) / C (зайчик) --- */
+  function fireBullet(weapon) {
+    const w = WEAPONS[weapon];
+    const bx = p.x + p.w / 2 + p.face * 34, by = p.y + 30;
+    bullets.push({ x: bx, y: by, vx: p.face * w.speed, life: w.life, rot: 0, weapon, dmg: w.dmg, pierce: w.pierce, hit: new Set() });
+    const colors = weapon === 'heart' ? ['#ff6fa8', '#ffd7ec'] : weapon === 'bunny' ? ['#3a2430', '#fff0fa'] : ['#ff8ce8', '#fff0fa'];
+    burst(bx, by, 3, colors, 90);
+    sfx.shoot(); updateHUD();
+  }
   if (keys.shoot && shootCd <= 0 && energy >= 7) {
     shootCd = 0.21; energy -= 7; p.shootAnim = 0.22;
-    const bx = p.x + p.w / 2 + p.face * 34, by = p.y + 30;
-    bullets.push({ x: bx, y: by, vx: p.face * 660, life: 1.1, rot: 0 });
-    burst(bx, by, 3, ['#ff8ce8', '#fff0fa'], 90);
-    sfx.shoot(); updateHUD();
+    fireBullet('star');
+  } else if (keys.heart && p.heartCd <= 0 && p.heartCharges > 0) {
+    p.heartCd = HEART_CD; p.heartCharges--; p.shootAnim = 0.22;
+    fireBullet('heart');
+  } else if (keys.bunny && p.bunnyCd <= 0 && p.bunnyCharges > 0) {
+    p.bunnyCd = BUNNY_CD; p.bunnyCharges--; p.shootAnim = 0.22;
+    fireBullet('bunny');
   }
   for (const b of bullets) {
     b.x += b.vx * dt; b.life -= dt; b.rot += dt * 9;
@@ -417,11 +456,15 @@ function update(dt) {
     const ey = e.fly ? e.baseY - 96 + Math.sin(e.t * 2.4) * 13 : e.baseY - e.h + Math.abs(Math.sin(e.t * 6)) * -3;
     e.drawY = ey;
     const ebox = { x: e.x - e.w / 2, y: ey + 6, w: e.w, h: e.h - 8 };
-    // попадание звёздочек
+    // попадание снарядов (звёздочка/сердце/зайчик)
     for (const b of bullets) {
-      if (b.life > 0 && Math.abs(b.x - e.x) < e.w / 2 + 8 && Math.abs(b.y - (ey + e.h / 2)) < e.h / 2 + 8) {
-        b.life = 0; e.hp--; e.flash = 0.14; sfx.hit();
-        burst(b.x, b.y, 7, ['#ff8ce8', '#ffe066', '#fff'], 220);
+      if (b.life <= 0) continue;
+      if (b.pierce && b.hit.has(e)) continue;
+      if (Math.abs(b.x - e.x) < e.w / 2 + 8 && Math.abs(b.y - (ey + e.h / 2)) < e.h / 2 + 8) {
+        if (b.pierce) b.hit.add(e); else b.life = 0;
+        e.hp -= (b.dmg || 1); e.flash = 0.14; sfx.hit();
+        const hitColors = b.weapon === 'heart' ? ['#ff6fa8', '#ffe066', '#fff'] : b.weapon === 'bunny' ? ['#3a2430', '#ffe066', '#fff'] : ['#ff8ce8', '#ffe066', '#fff'];
+        burst(b.x, b.y, 7, hitColors, 220);
         if (e.hp <= 0) {
           e.dead = true; kills++;
           combo++; comboTimer = 4; maxCombo = Math.max(maxCombo, combo);
@@ -500,6 +543,10 @@ function updateHUDLight() {
   ui.combo.textContent = combo;
   ui.energy.style.width = energy.toFixed(0) + '%';
   ui.energy.classList.toggle('low', energy < 25);
+  ui.heartCharges.textContent = player.heartCharges;
+  ui.heartCard.classList.toggle('empty', player.heartCharges <= 0);
+  ui.bunnyCharges.textContent = player.bunnyCharges;
+  ui.bunnyCard.classList.toggle('empty', player.bunnyCharges <= 0);
   const mm = String((timeSec / 60) | 0).padStart(2, '0'), ss = String((timeSec | 0) % 60).padStart(2, '0');
   ui.timer.textContent = `${mm}:${ss}`;
   const prog = Math.max(0, Math.min(1, (player.x - 40) / (GOAL.cx - 120)));
@@ -526,6 +573,27 @@ function drawPetalShape(x, y, s, rot, alpha) {
   ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,.55)';
   ctx.beginPath(); ctx.ellipse(-s * 0.2, -s * 0.25, s * 0.22, s * 0.4, 0.4, 0, 7); ctx.fill();
+  ctx.restore();
+}
+function drawHeartShape(x, y, s, color) {
+  ctx.save(); ctx.translate(x, y); ctx.fillStyle = color;
+  ctx.beginPath();
+  for (let i = 0; i <= 28; i++) {
+    const t = i / 28 * Math.PI * 2;
+    const px = (16 * Math.pow(Math.sin(t), 3)) * (s / 16);
+    const py = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * (s / 16);
+    ctx[i ? 'lineTo' : 'moveTo'](px, py);
+  }
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function drawBunnyShape(x, y, s, flip) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(flip, 1); ctx.fillStyle = '#2b1420';
+  ctx.beginPath(); ctx.ellipse(0, s * 0.2, s * 0.8, s * 0.72, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-s * 0.38, -s * 0.78, s * 0.3, s * 0.46, -0.15, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(s * 0.38, -s * 0.78, s * 0.3, s * 0.46, 0.15, 0, 7); ctx.fill();
+  ctx.fillStyle = '#ffccd9';
+  ctx.beginPath(); ctx.ellipse(-s * 0.38, -s * 0.78, s * 0.14, s * 0.3, -0.15, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(s * 0.38, -s * 0.78, s * 0.14, s * 0.3, 0.15, 0, 7); ctx.fill();
   ctx.restore();
 }
 function drawCloud(x, y, s, a) {
@@ -685,9 +753,19 @@ function draw(t) {
     }
   }
 
-  // 7) звёздочки-снаряды
-  for (const b of bullets) drawStar(b.x - camX, b.y - camY, 13, b.rot, '#ff4fd8'),
-    drawStar(b.x - camX, b.y - camY, 6, -b.rot, '#fff');
+  // 7) снаряды (звёздочка / сердце / зайчик)
+  for (const b of bullets) {
+    const bx = b.x - camX, by = b.y - camY;
+    if (b.weapon === 'heart') {
+      drawHeartShape(bx, by, 15, '#ff3f7e');
+      drawHeartShape(bx, by, 8, '#ffd7ec');
+    } else if (b.weapon === 'bunny') {
+      drawBunnyShape(bx, by, 13, b.vx < 0 ? -1 : 1);
+    } else {
+      drawStar(bx, by, 13, b.rot, '#ff4fd8');
+      drawStar(bx, by, 6, -b.rot, '#fff');
+    }
+  }
 
   // 8) частицы взрывов
   for (const pt of particles) {

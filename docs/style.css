@@ -69,12 +69,15 @@ kbd{
   display:inline-block;min-width:22px;text-align:center;padding:1px 6px;margin:0 1px;border-radius:6px;
   background:#f4f6fb;color:#333;font:700 12px/1.5 inherit;border:1px solid #c9cedb;box-shadow:0 2px 0 #aab;
 }
-.hud-weapon{position:absolute;right:12px;bottom:12px;padding:9px 13px;display:flex;gap:11px;align-items:center;min-width:250px}
+.hud-weapon{position:absolute;right:12px;bottom:12px;padding:9px 13px;display:flex;gap:11px;align-items:center;min-width:330px}
+.weapon-cards{display:flex;gap:7px}
 .weapon-card{
-  width:52px;height:52px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  font-size:24px;background:radial-gradient(circle at 50% 30%,#ff9ecb,#d63384);border:2px solid #ffd0e6;box-shadow:0 0 14px rgba(255,110,180,.8);
+  width:48px;height:48px;border-radius:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:21px;background:radial-gradient(circle at 50% 30%,#ff9ecb,#d63384);border:2px solid #ffd0e6;box-shadow:0 0 14px rgba(255,110,180,.8);
+  transition:opacity .2s,filter .2s;
 }
-.weapon-card small{font-size:10px;font-weight:800}
+.weapon-card.empty{opacity:.4;filter:grayscale(.7);box-shadow:none}
+.weapon-card small{font-size:9px;font-weight:800}
 .weapon-label{font-size:11px;font-weight:800;letter-spacing:.6px;color:#ffd7ec}
 .energy-track{height:11px;margin:5px 0 4px;background:rgba(0,0,0,.45);border:1px solid rgba(255,170,215,.55);border-radius:99px;overflow:hidden}
 .energy-fill{height:100%;width:100%;background:repeating-linear-gradient(90deg,#ff5fa8 0 12px,#ff8fc4 12px 24px)}
@@ -91,12 +94,13 @@ kbd{
 /* ---------- сенсорные кнопки ---------- */
 .touch{position:absolute;left:0;right:0;bottom:64px;display:flex;justify-content:space-between;padding:0 14px;z-index:6;pointer-events:none}
 .touch[hidden]{display:none}
-.touch-group{display:flex;gap:12px}
+.touch-group{display:flex;gap:10px;align-items:flex-end}
 .touch-btn{
   pointer-events:auto;width:62px;height:62px;border-radius:50%;font-size:24px;color:#fff;cursor:pointer;
   background:rgba(43,22,48,.55);border:2px solid rgba(255,170,215,.8);backdrop-filter:blur(2px);
 }
 .touch-btn.on{background:rgba(255,95,168,.75)}
+.touch-heart,.touch-bunny{width:48px;height:48px;font-size:18px}
 
 /* ---------- экраны ---------- */
 .overlay{

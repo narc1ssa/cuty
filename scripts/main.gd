@@ -307,13 +307,18 @@ func _stats_text() -> String:
 		gems_got, total_gems, kills, ENEMY_SPAWNS.size(), max_combo]
 
 
-func _on_player_shot(from_pos: Vector2, dir: int) -> void:
+func _on_player_shot(from_pos: Vector2, dir: int, weapon: String = "star") -> void:
 	var bullet: MilaBullet = BulletScene.instantiate() as MilaBullet
 	bullet.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(bullet)
-	bullet.setup(from_pos, dir)
+	bullet.setup(from_pos, dir, weapon)
 	sfx.play("shoot")
-	burst(from_pos, Color(1, 0.55, 0.91), 3, 90.0)
+	var col := Color(1, 0.55, 0.91)
+	if weapon == "heart":
+		col = Color(1, 0.35, 0.58)
+	elif weapon == "bunny":
+		col = Color(0.22, 0.14, 0.24)
+	burst(from_pos, col, 3, 90.0)
 
 
 func _on_enemy_got_hit(at_pos: Vector2) -> void:
@@ -390,7 +395,8 @@ func _update_hud() -> void:
 		if is_instance_valid(e) and not e.dead:
 			foes += 1
 	var progress := clampf((player.global_position.x - 40.0) / (GOAL_CENTRE.x - 120.0), 0.0, 1.0)
-	hud.set_stats(player.hp, coins_got, gems_got, combo, foes, player.energy, time_sec, progress)
+	hud.set_stats(player.hp, coins_got, gems_got, combo, foes, player.energy, time_sec, progress,
+		player.heart_charges, MilaPlayer.HEART_MAX, player.bunny_charges, MilaPlayer.BUNNY_MAX)
 
 
 func _process(delta: float) -> void:
