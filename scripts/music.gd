@@ -1,58 +1,49 @@
 extends Node
-## Фоновая музыка, синтезированная в коде (без аудиофайлов):
-## генерируем зацикленный AudioStreamWAV и играем через AudioStreamPlayer.
+## Фоновая музыка уровня: чередование двух настоящих мелодий из файлов
+## res://music.mp3 и res://music_soft.mp3. Как только одна дорожка
+## заканчивается — тут же начинает играть следующая, и так по кругу
+## бесконечно (без разрывов между переключениями).
 ## Громкость управляется общим флагом `muted` (клавиша M).
 
-const MIX_RATE := 22050
+const TRACK_PATHS := ["res://music.mp3", "res://music_soft.mp3"]
+const VOLUME_DB := -10.0
 
 var muted := false
 var _player: AudioStreamPlayer = null
-var _stream: AudioStreamWAV = null
+var _tracks: Array = []
+var _track_index := 0
 
 
 func _ready() -> void:
-	_stream = _make_music()
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	for path in TRACK_PATHS:
+		var stream: AudioStream = load(path)
+		if stream != null:
+			_tracks.append(stream)
 	_player = AudioStreamPlayer.new()
-	_player.stream = _stream
-	_player.volume_db = -14.0
+	_player.volume_db = VOLUME_DB
 	add_child(_player)
+	_player.finished.connect(_play_next)
+	_play_current()
+
+
+func _play_current() -> void:
+	if _tracks.is_empty():
+		return
+	_player.stream = _tracks[_track_index]
 	_player.play()
 
 
-func _make_music() -> AudioStreamWAV:
-	# Спокойная пентатоническая мелодия в духе «сакурового леса».
-	var notes := [
-		[523.25, 0.4], [659.25, 0.4], [783.99, 0.4], [659.25, 0.4],
-		[523.25, 0.4], [392.00, 0.4], [440.00, 0.4], [523.25, 0.8],
-		[587.33, 0.4], [659.25, 0.4], [783.99, 0.4], [880.00, 0.4],
-		[783.99, 0.4], [659.25, 0.4], [523.25, 0.4], [392.00, 0.8],
-	]
-	var data := PackedByteArray()
-	for note in notes:
-		var freq := float(note[0])
-		var dur := float(note[1])
-		var n := int(MIX_RATE * dur)
-		var phase := 0.0
-		for i in range(n):
-			var k := float(i) / float(maxi(1, n))
-			phase += freq / MIX_RATE
-			var v := sin(phase * TAU) * 0.7 + sin(phase * TAU * 2.0) * 0.2
-			var env := (1.0 - k * 0.3) * minf(1.0, k * 10.0)
-			data.append(int(clampf(128.0 + v * env * 26.0, 0.0, 255.0)))
-	var wav := AudioStreamWAV.new()
-	wav.format = AudioStreamWAV.FORMAT_8_BITS
-	wav.mix_rate = MIX_RATE
-	wav.stereo = false
-	wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
-	wav.loop_begin = 0
-	wav.loop_end = data.size()
-	wav.data = data
-	return wav
+func _play_next() -> void:
+	if _tracks.is_empty():
+		return
+	_track_index = (_track_index + 1) % _tracks.size()
+	_play_current()
 
 
 func play() -> void:
 	if _player != null and not _player.playing:
-		_player.play()
+		_play_current()
 
 
 func stop() -> void:
@@ -63,4 +54,4 @@ func stop() -> void:
 func set_muted(m: bool) -> void:
 	muted = m
 	if _player != null:
-		_player.volume_db = -80.0 if m else -14.0
+		_player.volume_db = -80.0 if m else VOLUME_DB

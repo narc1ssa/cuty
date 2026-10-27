@@ -92,10 +92,10 @@ func _draw() -> void:
 		draw_rect(Rect2(-w / 2.0 + 1, y + 1, (w - 2) * float(hp) / float(max_hp), 4), Color(1, 0.37, 0.62))
 
 
-func take_hit() -> void:
+func take_hit(damage: int = 1) -> void:
 	if dead:
 		return
-	hp -= 1
+	hp -= damage
 	_flash = 0.14
 	got_hit.emit(global_position)
 	queue_redraw()

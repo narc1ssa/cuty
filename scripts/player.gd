@@ -3,7 +3,7 @@ extends CharacterBody2D
 ## Мила: ходьба, двойной прыжок (койот-тайм + буфер прыжка), стрельба.
 ## Начало координат тела — у ног героини, спрайт рисуется вверх от него.
 
-signal shot_fired(from_pos: Vector2, dir: int)
+signal shot_fired(from_pos: Vector2, dir: int, weapon: String)
 signal hp_changed(hp: int)
 
 const SPEED := 265.0
@@ -12,11 +12,26 @@ const JUMP_VELOCITY := 775.0
 const DOUBLE_JUMP_VELOCITY := 715.0
 const MAX_HP := 5
 
+## Панель способностей (как на макете HUD.png): Z — звёздный бластер
+## (бесконечно, тратит энергию), X — сердечный выстрел (двойной урон,
+## ограниченные заряды), C — выстрел-зайчик (пробивает насквозь
+## нескольких врагов, ограниченные заряды). Заряды X/C медленно
+## восстанавливаются сами по себе, как энергия бластера.
+const HEART_MAX := 3
+const HEART_REGEN_TIME := 9.0
+const HEART_COOLDOWN := 0.35
+
+const BUNNY_MAX := 6
+const BUNNY_REGEN_TIME := 6.0
+const BUNNY_COOLDOWN := 0.26
+
 var textures := {}
 var face := 1
 var hp := MAX_HP
 var active := false
 var energy := 100.0
+var heart_charges := HEART_MAX
+var bunny_charges := BUNNY_MAX
 
 var _coyote := 0.0
 var _jump_buffer := 0.0
@@ -27,6 +42,10 @@ var _shoot_anim := 0.0
 var _hurt_anim := 0.0
 var _run_time := 0.0
 var _prev_jump_held := false
+var _heart_cd := 0.0
+var _bunny_cd := 0.0
+var _heart_regen := 0.0
+var _bunny_regen := 0.0
 
 # Виртуальные клавиши с сенсорных кнопок HUD: {"left":bool, ...}
 var virtual_keys := {}
@@ -58,10 +77,16 @@ func reset(spawn_feet: Vector2) -> void:
 	hp = MAX_HP
 	face = 1
 	energy = 100.0
+	heart_charges = HEART_MAX
+	bunny_charges = BUNNY_MAX
 	_invuln = 0.0
 	_shoot_cd = 0.0
 	_shoot_anim = 0.0
 	_hurt_anim = 0.0
+	_heart_cd = 0.0
+	_bunny_cd = 0.0
+	_heart_regen = 0.0
+	_bunny_regen = 0.0
 	_air_jumps_used = 0
 	visible = true
 	sprite.rotation = 0.0
@@ -81,8 +106,12 @@ func _key(action: String) -> bool:
 			return Input.is_physical_key_pressed(KEY_UP) or Input.is_physical_key_pressed(KEY_W) \
 				or Input.is_physical_key_pressed(KEY_SPACE)
 		"shoot":
-			return Input.is_physical_key_pressed(KEY_Z) or Input.is_physical_key_pressed(KEY_X) \
-				or Input.is_physical_key_pressed(KEY_J) or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+			return Input.is_physical_key_pressed(KEY_Z) or Input.is_physical_key_pressed(KEY_J) \
+				or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+		"heart":
+			return Input.is_physical_key_pressed(KEY_X)
+		"bunny":
+			return Input.is_physical_key_pressed(KEY_C)
 	return false
 
 
@@ -91,11 +120,31 @@ func _physics_process(delta: float) -> void:
 		_invuln -= delta
 	if _shoot_cd > 0.0:
 		_shoot_cd -= delta
+	if _heart_cd > 0.0:
+		_heart_cd -= delta
+	if _bunny_cd > 0.0:
+		_bunny_cd -= delta
 	if _shoot_anim > 0.0:
 		_shoot_anim -= delta
 	if _hurt_anim > 0.0:
 		_hurt_anim -= delta
 	energy = minf(100.0, energy + 26.0 * delta)
+
+	if heart_charges < HEART_MAX:
+		_heart_regen += delta
+		if _heart_regen >= HEART_REGEN_TIME:
+			_heart_regen -= HEART_REGEN_TIME
+			heart_charges += 1
+	else:
+		_heart_regen = 0.0
+
+	if bunny_charges < BUNNY_MAX:
+		_bunny_regen += delta
+		if _bunny_regen >= BUNNY_REGEN_TIME:
+			_bunny_regen -= BUNNY_REGEN_TIME
+			bunny_charges += 1
+	else:
+		_bunny_regen = 0.0
 
 	var move := 0
 	if active:
@@ -137,7 +186,17 @@ func _physics_process(delta: float) -> void:
 		_shoot_cd = 0.21
 		energy -= 7.0
 		_shoot_anim = 0.22
-		shot_fired.emit(global_position + Vector2(face * 34.0, -48.0), face)
+		shot_fired.emit(global_position + Vector2(face * 34.0, -48.0), face, "star")
+	elif active and _key("heart") and _heart_cd <= 0.0 and heart_charges > 0:
+		_heart_cd = HEART_COOLDOWN
+		heart_charges -= 1
+		_shoot_anim = 0.22
+		shot_fired.emit(global_position + Vector2(face * 34.0, -48.0), face, "heart")
+	elif active and _key("bunny") and _bunny_cd <= 0.0 and bunny_charges > 0:
+		_bunny_cd = BUNNY_COOLDOWN
+		bunny_charges -= 1
+		_shoot_anim = 0.22
+		shot_fired.emit(global_position + Vector2(face * 34.0, -48.0), face, "bunny")
 
 	move_and_slide()
 	global_position.x = clampf(global_position.x, -18.0, 2861.0 - 10.0)

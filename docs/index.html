@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Мила • Сакуровый лес — платформер</title>
+<link rel="icon" href="assets/sprites/hero_idle.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="page">
+  <div class="game-shell" id="shell">
+
+    <canvas id="game" width="1280" height="720" aria-label="Игра: Мила в Сакуровом лесу"></canvas>
+
+    <!-- ===== HUD (по макету HUD.png / preview.png) ===== -->
+    <div class="hud" id="hud" hidden>
+      <!-- слева: профиль -->
+      <div class="hud-profile panel">
+        <div class="portrait"><img src="assets/sprites/hero_idle.png" alt="Мила"></div>
+        <div class="profile-main">
+          <div class="hero-name">МИЛА <span class="sakura">✿</span></div>
+          <div class="hearts" id="hearts" title="Здоровье"></div>
+          <div class="resources">
+            <span class="res coin-res">⭐ <b id="coins">0</b></span>
+            <span class="res gem-res">♦ <b id="gems">0</b></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- центр: уровень + прогресс -->
+      <div class="hud-center">
+        <div class="level-banner">❖ 1-4 • САКУРОВЫЙ ЛЕС ❖</div>
+        <div class="progress" title="Путь от флажка к порталу">
+          <span class="progress-flag">⚑</span>
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div><div class="progress-dot" id="progressDot">🌸</div></div>
+          <span class="progress-portal">🌀</span>
+        </div>
+      </div>
+
+      <!-- справа: комбо, таймер, кнопки -->
+      <div class="hud-right">
+        <div class="panel combo-panel">КОМБО <b>★ ×<span id="combo">0</span></b></div>
+        <div class="panel timer-panel">⏱ <span id="timer">00:00</span></div>
+        <button class="icon-btn" id="soundBtn" title="Звук (M)">🔊</button>
+        <button class="icon-btn" id="pauseBtn" title="Пауза (P / Esc)">⏸</button>
+      </div>
+
+      <!-- слева внизу: подсказки -->
+      <div class="hud-controls panel">
+        <span><kbd>←</kbd><kbd>→</kbd> движение</span>
+        <span><kbd>↑</kbd>/<kbd>Space</kbd> прыжок ×2</span>
+        <span><kbd>Z</kbd>/<kbd>X</kbd>/<kbd>C</kbd> оружие</span>
+      </div>
+
+      <!-- справа внизу: панель способностей (Z/X/C) и энергия -->
+      <div class="hud-weapon panel">
+        <div class="weapon-cards">
+          <div class="weapon-card active" title="Звёздный бластер — бесконечно">⭐<small>Z • ∞</small></div>
+          <div class="weapon-card" id="heartCard" title="Сердечный выстрел — двойной урон">💗<small>X • <span id="heartCharges">3</span>/3</small></div>
+          <div class="weapon-card" id="bunnyCard" title="Выстрел-зайчик — пробивает насквозь">🐇<small>C • <span id="bunnyCharges">6</span>/6</small></div>
+        </div>
+        <div class="weapon-info">
+          <div class="weapon-label">ПАТРОНЫ • ЭНЕРГИЯ</div>
+          <div class="energy-track"><div class="energy-fill" id="energyFill"></div></div>
+          <div class="foes-left">Врагов осталось: <b id="foesLeft">0</b></div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" hidden>⚠ ОСТОРОЖНО! ВРАГИ!</div>
+    </div>
+
+    <!-- сенсорное управление -->
+    <div class="touch" id="touch" hidden>
+      <div class="touch-group">
+        <button class="touch-btn" data-k="left">◀</button>
+        <button class="touch-btn" data-k="right">▶</button>
+      </div>
+      <div class="touch-group">
+        <button class="touch-btn touch-bunny" data-k="bunny">🐇</button>
+        <button class="touch-btn touch-heart" data-k="heart">💗</button>
+        <button class="touch-btn touch-shoot" data-k="shoot">⭐</button>
+        <button class="touch-btn touch-jump" data-k="jump">▲</button>
+      </div>
+    </div>
+
+    <!-- ===== СТАРТОВЫЙ ЭКРАН ===== -->
+    <section class="overlay" id="menu">
+      <div class="card menu-card">
+        <img class="menu-hero" src="assets/sprites/hero_shoot.png" alt="Мила со звёздным бластером">
+        <h1>МИЛА</h1>
+        <p class="subtitle">1-4 • Сакуровый лес ✿</p>
+        <p class="story">Добеги от розового флажка ⚑ на левом краю леса до крайнего
+          правого храма с крутящейся розовой воронкой 🌀. Прыгай по платформам,
+          стреляй по врагам — каждый патрулирует свою платформу, —
+          собирай монеты и кристаллы и не падай в пропасти с шипами!</p>
+        <div class="controls-grid">
+          <div><kbd>←</kbd><kbd>→</kbd> или <kbd>A</kbd><kbd>D</kbd><span>движение</span></div>
+          <div><kbd>↑</kbd> <kbd>W</kbd> <kbd>Space</kbd><span>прыжок (в воздухе — ещё раз!)</span></div>
+          <div><kbd>Z</kbd> <kbd>J</kbd> или мышь<span>⭐ звёздный бластер — бесконечно</span></div>
+          <div><kbd>X</kbd><span>💗 сердечный выстрел — двойной урон, 3 заряда</span></div>
+          <div><kbd>C</kbd><span>🐇 выстрел-зайчик — пробивает насквозь, 6 зарядов</span></div>
+          <div><kbd>P</kbd>/<kbd>Esc</kbd> пауза &nbsp;•&nbsp; <kbd>M</kbd> звук &nbsp;•&nbsp; <kbd>R</kbd> заново</div>
+        </div>
+        <button class="big-btn" id="startBtn" disabled>Загрузка…</button>
+        <p class="hint" id="loadHint">Загружаем карту и спрайты…</p>
+      </div>
+    </section>
+
+    <!-- ===== ПАУЗА ===== -->
+    <section class="overlay" id="pauseMenu" hidden>
+      <div class="card">
+        <h2>⏸ Пауза</h2>
+        <p class="story">Лепестки сакуры подождут. 🌸</p>
+        <button class="big-btn" id="resumeBtn">Продолжить</button>
+        <button class="ghost-btn" id="restartBtn2">Начать уровень заново</button>
+      </div>
+    </section>
+
+    <!-- ===== ПОБЕДА ===== -->
+    <section class="overlay" id="winMenu" hidden>
+      <div class="card">
+        <img class="end-hero" src="assets/sprites/hero_win.png" alt="Мила празднует победу">
+        <h2>🎉 Уровень пройден!</h2>
+        <p class="story">Мила добралась до храма и шагнула в крутящуюся розовую воронку!</p>
+        <div class="stats" id="winStats"></div>
+        <button class="big-btn" id="againBtn">Играть ещё раз</button>
+      </div>
+    </section>
+
+    <!-- ===== ПОРАЖЕНИЕ ===== -->
+    <section class="overlay" id="overMenu" hidden>
+      <div class="card">
+        <img class="end-hero dead" src="assets/sprites/hero_dead.png" alt="Мила упала">
+        <h2>💔 Ох, Мила упала…</h2>
+        <p class="story">Сердечки закончились. Но сакуровый лес верит в тебя — попробуй ещё раз!</p>
+        <div class="stats" id="overStats"></div>
+        <button class="big-btn" id="retryBtn">Попробовать снова</button>
+      </div>
+    </section>
+  </div>
+
+  <p class="footer">Мила • Сакуровый лес — платформер на Canvas (HTML5), запускается прямо в браузере через GitHub Pages.
+     Карта, героиня и враги — из материалов репозитория
+     (<code>map.png</code>, <code>hero.png</code>, <code>enemies.png</code>), интерфейс — по макетам <code>HUD.png</code> / <code>preview.png</code>.
+     Полнофункциональная версия на движке Godot 4.7 лежит в корне репозитория.</p>
+</main>
+<script src="game.js"></script>
+</body>
+</html>
