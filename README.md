@@ -70,7 +70,7 @@ scripts/
   items.gd             отрисовка монет, кристаллов и сердечек
   hud.gd               весь интерфейс кодом (профиль, сердечки, комбо, таймер,
                        энергия, прогресс флаг->портал, тост, экраны, тач-кнопки)
-  sfx.gd               синтезированные звуки (AudioStreamWAV, без файлов)
+  sfx.gd               звуковые эффекты: выстрел — файл shot.wav, остальное — синтез (AudioStreamWAV)
 assets/sprites/        спрайты Милы и врагов (PNG с прозрачностью)
 tools/extract_sprites.py  вырезает спрайты из hero_bck.png / enemies.png
 legacy_web/            архив исходной веб-версии (HTML5 Canvas)

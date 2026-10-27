@@ -1,10 +1,12 @@
 extends Node
-## Короткие звуковые эффекты, синтезированные в коде (без аудиофайлов):
-## генерируем AudioStreamWAV и играем через пул плееров.
+## Короткие звуковые эффекты. Выстрел — настоящий файл res://shot.wav,
+## остальные эффекты по-прежнему синтезируются в коде (AudioStreamWAV),
+## играются через общий пул плееров.
 
 const MIX_RATE := 22050
 
 var _streams := {}
+var _volumes_db := {"shoot": -8.0}  # у shot.wav длинный хвост реверба — слегка приглушаем
 var _players: Array[AudioStreamPlayer] = []
 var _next := 0
 var muted := false
@@ -15,7 +17,8 @@ func _ready() -> void:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
 		_players.append(p)
-	_streams["shoot"] = _sweep(920.0, 240.0, 0.12, true)
+	var shot_file: AudioStream = load("res://shot.wav")
+	_streams["shoot"] = shot_file if shot_file != null else _sweep(920.0, 240.0, 0.12, true)
 	_streams["jump"] = _sweep(300.0, 640.0, 0.14, false)
 	_streams["coin"] = _melody([950.0, 1420.0], 0.09)
 	_streams["gem"] = _sweep(700.0, 1400.0, 0.16, false)
@@ -71,4 +74,5 @@ func play(sfx_name: String) -> void:
 	var p := _players[_next]
 	_next = (_next + 1) % _players.size()
 	p.stream = _streams[sfx_name]
+	p.volume_db = float(_volumes_db.get(sfx_name, 0.0))
 	p.play()
