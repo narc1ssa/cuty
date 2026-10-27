@@ -55,7 +55,7 @@ const ready = Promise.all([
   ui.loadHint.textContent = 'Всё готово! Добеги от флажка ⚑ до храма с воронкой 🌀 справа.';
 }).catch(() => { ui.loadHint.textContent = 'Не удалось загрузить картинки — запустите через локальный сервер (см. README).'; });
 
-/* ---------------- звук (синтез, без файлов) ---------------- */
+/* ---------------- звук (синтез + настоящий файл для выстрела) ---------------- */
 let audioCtx = null, muted = false;
 function beep(f0, f1, dur, type = 'square', vol = 0.05, delay = 0) {
   if (muted) return;
@@ -69,8 +69,19 @@ function beep(f0, f1, dur, type = 'square', vol = 0.05, delay = 0) {
     o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + dur + 0.02);
   } catch (e) { /* без звука */ }
 }
+/* Пул клипов shot.wav для частой, перекрывающейся стрельбы без обрезания звука. */
+const SHOT_POOL = Array.from({ length: 8 }, () => new Audio('shot.wav'));
+let shotPoolIndex = 0;
+function playShot() {
+  if (muted) return;
+  const clip = SHOT_POOL[shotPoolIndex];
+  shotPoolIndex = (shotPoolIndex + 1) % SHOT_POOL.length;
+  clip.currentTime = 0;
+  clip.volume = 0.4;
+  clip.play().catch(() => {});
+}
 const sfx = {
-  shoot: () => beep(920, 240, 0.12, 'square', 0.035),
+  shoot: () => playShot(),
   jump: () => beep(300, 640, 0.14, 'sine', 0.05),
   coin: () => { beep(950, 950, 0.07, 'sine', 0.05); beep(1420, 1420, 0.12, 'sine', 0.05, 0.07); },
   gem: () => { beep(700, 1400, 0.16, 'triangle', 0.06); },
